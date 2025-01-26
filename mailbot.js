@@ -1,6 +1,8 @@
 import readlinesync from 'readline-sync';
 import OpenAI from 'openai';
 import { directoryScanner, mailSender } from './mailer_tools/tools.js';
+import { fetchAndParseEmails } from './mailer_tools/readmail.js';
+
 import dotenv from 'dotenv';
 dotenv.config();
 // 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
@@ -21,7 +23,8 @@ const client = new OpenAI({
 // TOOLS Dictionary.
 const tools = {
     "mailSender" : mailSender,
-    "directoryScanner" : directoryScanner
+    "directoryScanner" : directoryScanner,
+    "mailReader" : fetchAndParseEmails
 }
 
 const SYSTEM_PROMPT = `
@@ -31,6 +34,7 @@ IF THE USER GREETS YOU GREET HIM/HER BACK AND TELL THEM WHAT YOU CAN DO AND ASK 
 TOOLS AVAILABLE:
 - directoryScanner(query: string): string
 - mailSender(content: {subject : string , body : string , html : string}, receiverEmail: string): boolean
+- mailReader(n: number): {senderEmail: string, emailContent: {subject: string, body: string, date: string}[]}[]
 
 example usage: 
 {"type": "action", "function": "directoryScanner", "input": {"name": "Ben"}}
@@ -64,6 +68,11 @@ C. EMAIL SENDING
 - Use mailSender to send email
 - Provide sending confirmation
 
+D. EMAIL READING(WHEN USER ASKS FOR IT)
+- Use mailReader to read the last n emails
+- Always first provide a summary along with the senders email and the date of the email
+- If and only if the user wants to read the email, provide the email content.
+
 CRITICAL RESPONSE RULES:
 - Always respond in valid, parseable JSON
 - Follow sequence: Plan → Action → Observation → Reply
@@ -78,6 +87,8 @@ RESPONSE TYPES:
 - "observation": Report tool/action result
 - "generation": Create draft content
 - "output": Conclude task
+- "waiting": Notify user of processing time
+- "end": Terminate conversation ONLY IF USER SAYS "BYE" , or "END" or "QUIT", or something like that. 
 
 EXAMPLE FLOW:
 {"type": "plan", "plan": "Find Ben's email address"}
@@ -95,6 +106,7 @@ let messages = [
     }
 ]
 
+outerloop:
 while(true)
 {
     const query = readlinesync.question("You : ");
@@ -140,6 +152,10 @@ while(true)
             {
                 observationResult = await tool(chatJson.input.content, chatJson.input.receiverEmail);
             }
+            else if(chatJson.function === "mailReader")
+            {
+                observationResult = await tool(chatJson.input.n);
+            }
             messages.push({
                 'role' : 'assistant',
                 content : JSON.stringify({
@@ -169,6 +185,10 @@ while(true)
         else if(chatJson.type == "waiting")
         {
             console.log("Bot : ", chatJson.waiting);
+        }
+        else if(chatJson.type == "end")
+        {
+            break outerloop;
         }
     }
 }
