@@ -5,9 +5,7 @@ import { fetchAndParseEmails } from './mailer_tools/readmail.js';
 
 import dotenv from 'dotenv';
 dotenv.config();
-// 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
-// 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
-// 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
+
 const myMailDirectory = {
     "Kavya Shakya" : 'kavya.shakya23@gmail.com',
     "Ben Affleck" : 'con.kavya@gmail.com'
