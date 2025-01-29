@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev" : "node ./mailbot.js"
+    "dev": "node ./mailbot.js",
+    "init" : "node ./auth.js"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +15,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.2",
     "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "googleapis": "^144.0.0",
     "html-entities": "^2.5.2",
     "nodemailer": "^6.10.0",

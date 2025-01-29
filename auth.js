@@ -1,6 +1,8 @@
 import fs from 'fs';
-import readline from 'readline';
 import { google } from 'googleapis';
+import express from 'express';
+
+const app = express();
 
 // Scopes define the API access your app needs
 const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.send'];
@@ -16,32 +18,56 @@ export async function authenticateGmail() {
   if (fs.existsSync(TOKEN_PATH)) {
     const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
     oAuth2Client.setCredentials(token);
+    return oAuth2Client;
   } else {
-    // Generate new token
+    // Generate the authentication URL
     const authUrl = oAuth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: SCOPES,
     });
     console.log('Authorize this app by visiting this URL:', authUrl);
 
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
+    // Set up the Express server
+    app.get('/', async (req, res) => {
+      const code = req.query.code;
 
-    await new Promise((resolve) => {
-      rl.question('Enter the code from that page here: ', async (code) => {
+      if (!code) {
+        res.send('Authorization code not found in the URL.');
+        return;
+      }
+
+      console.log('Authorization code received:', code);
+
+      try {
         const { tokens } = await oAuth2Client.getToken(code);
         oAuth2Client.setCredentials(tokens);
+
+        // Save the token to disk for future use
         fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens));
         console.log('Token stored to', TOKEN_PATH);
-        rl.close();
-        resolve();
-      });
+
+        res.send('Authentication successful! You can close this window.');
+      } catch (error) {
+        console.error('Error retrieving access token', error);
+        res.send('Error during authentication.');
+      }
+
+      // Shut down the server after processing
+      setTimeout(() => {
+        process.exit(0);
+      }, 1000);
+    });
+
+    const PORT = 3000; // Ensure your redirect URI in credentials.json is set to http://localhost:3000
+    app.listen(PORT, () => {
+      console.log(`Server is listening on http://localhost:${PORT}`);
+    });
+
+    // Return a promise that resolves when the process exits
+    return new Promise(() => {
+      console.log('Waiting for authentication...');
     });
   }
-
-  return oAuth2Client;
 }
 
-authenticateGmail()
+authenticateGmail();

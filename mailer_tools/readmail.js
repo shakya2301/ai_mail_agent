@@ -4,7 +4,7 @@ import parseEmailBody from '../utils/mailparser.js'; // Import the parser functi
 
 export async function fetchAndParseEmails(n) {
   const auth = await authenticateGmail();
-  const gmail = google.gmail({ version: 'v1', auth });
+  const gmail = google.gmail({ version: 'v1', auth :auth });
 
   const dateNdaysAgo = new Date();
   dateNdaysAgo.setDate(dateNdaysAgo.getDate() - n);
@@ -56,8 +56,8 @@ export async function fetchAndParseEmails(n) {
   return emailContent;
 }
 
-// (async () => {
-//   const n = 2; // Last 7 days
-//   const emailData = await fetchAndParseEmails(n);
-//   console.log(JSON.stringify(emailData, null, 2));
-// })();
+(async () => {
+  const n = 2; // Last 7 days
+  const emailData = await fetchAndParseEmails(n);
+  console.log(JSON.stringify(emailData, null, 2));
+})();
